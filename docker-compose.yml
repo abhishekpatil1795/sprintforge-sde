@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sprintforge
+      POSTGRES_USER: sprintforge
+      POSTGRES_PASSWORD: local-only-change-me
+    volumes:
+      - sprintforge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sprintforge -d sprintforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql+psycopg://sprintforge:local-only-change-me@db:5432/sprintforge
+      JWT_SECRET: local-compose-secret-change-before-deployment
+      JWT_EXPIRE_MINUTES: 120
+      CLIENT_ORIGIN: http://localhost:5173
+      ENVIRONMENT: development
+      PORT: 8000
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: http://localhost:8000/api
+    ports: ["5173:80"]
+    depends_on: [api]
+volumes:
+  sprintforge_pgdata:
