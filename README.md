@@ -87,10 +87,10 @@ git push -u origin main
 Replace `YOUR_USERNAME`. Do not commit `.env` files or secrets.
 
 ## Deployment outline
-1. Deploy `server/` using its Dockerfile on a Docker-compatible host.
-2. Provision managed PostgreSQL and configure `DATABASE_URL`, a long random `JWT_SECRET`, `CLIENT_ORIGIN`, and `ENVIRONMENT=production` in platform secrets.
-3. Deploy `client/` as a static Vite build with `VITE_API_URL` set to the deployed API's `/api` URL.
-4. Set CORS to the exact frontend origin, enable HTTPS, and verify health, registration, login, project creation, and task updates.
+1. Create a Neon PostgreSQL database and copy its pooled connection string to `DATABASE_URL`.
+2. In Render, choose **New + → Blueprint** and select this repository. Render will read `render.yaml` and create the API and static site.
+3. Set `VITE_API_URL` to the deployed API URL plus `/api`, then set `CLIENT_ORIGIN` to the exact static-site URL (no trailing slash). Render generates `JWT_SECRET` automatically.
+4. Redeploy both services and verify health, registration, login, project creation, and task updates.
 5. Add screenshots and a demo link only after verifying the deployed app.
 
 Docker Compose is for local development. Before production use, add Alembic schema migrations, rate limiting, password reset/email verification, refresh-token rotation, backups, monitoring, and platform-managed secrets. Access tokens expire after two hours. Those additional features are not implemented in this version.

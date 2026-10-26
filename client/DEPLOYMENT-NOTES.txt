@@ -1,0 +1,20 @@
+SprintForge deployment notes
+============================
+
+Render uses the repository's render.yaml to create both services.
+
+- Backend: Docker web service from server/
+- Frontend: Static site from client/ with dist as the publish directory
+- Database: Neon PostgreSQL connection string stored in Render as DATABASE_URL
+
+Required Render settings
+------------------------
+
+1. In the frontend service, set VITE_API_URL to the backend's public URL followed
+   by /api, for example https://sprintforge-api.onrender.com/api.
+2. In the backend service, set CLIENT_ORIGIN to the exact frontend public URL,
+   without a trailing slash.
+3. Paste the Neon pooled connection string into DATABASE_URL. Do not commit it.
+
+After changing either service variable, redeploy the affected service. Verify
+/api/health, account creation, sign-in, project creation, and task updates.

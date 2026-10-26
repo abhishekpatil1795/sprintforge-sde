@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
 type User = { id: number; name: string; email: string };
 type Project = { id: number; name: string; description: string; updated_at: string; task_count: number; owner_id: number };
 type Task = { id: number; title: string; description: string; status: 'TODO' | 'IN_PROGRESS' | 'DONE'; priority: 'LOW' | 'MEDIUM' | 'HIGH'; due_date?: string | null };
@@ -31,6 +31,14 @@ export default function App() {
   const [taskDescription, setTaskDescription] = useState('');
   const [taskPriority, setTaskPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [filter, setFilter] = useState<'ALL' | Task['status']>('ALL');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sf-theme') as 'light' | 'dark') || 'light');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('sf-theme', theme);
+  }, [theme]);
+
+  function toggleTheme() { setTheme(current => current === 'light' ? 'dark' : 'light'); }
 
   async function loadProjects(authToken = token) {
     const result = await api<Project[]>('/projects', authToken);
@@ -83,8 +91,12 @@ export default function App() {
       });
       localStorage.setItem('sf-token', result.token);
       setUser(result.user); setToken(result.token);
-    } catch (e) { setError((e as Error).message); }
-    finally { setBusy(false); }
+    } catch (e) {
+      const message = e instanceof TypeError && /fetch/i.test(e.message)
+        ? `Could not reach the API at ${API}. Check that the API is live and its CLIENT_ORIGIN setting includes this site's exact URL.`
+        : (e as Error).message;
+      setError(message);
+    } finally { setBusy(false); }
   }
 
   async function createProject(e: FormEvent) {
@@ -132,24 +144,44 @@ export default function App() {
 
   if (!token || !user) return (
     <main className="auth-page">
-      <section className="auth-card">
-        <div className="brand-mark">SF</div>
-        <p className="eyebrow">TEAM WORKSPACE</p>
-        <h1>Make work <span>flow.</span></h1>
-        <p className="muted">A clear view of projects, tasks, and momentum.</p>
-        <div className="tabs">
-          <button className={mode === 'login' ? 'tab active' : 'tab'} onClick={() => setMode('login')}>Sign in</button>
-          <button className={mode === 'register' ? 'tab active' : 'tab'} onClick={() => setMode('register')}>Create account</button>
-        </div>
-        <form onSubmit={authenticate} className="form-stack">
-          {mode === 'register' && <label>Full name<input name="name" placeholder="Alex Morgan" minLength={2} required /></label>}
-          <label>Email address<input name="email" type="email" placeholder="you@example.com" required /></label>
-          <label>Password<input name="password" type="password" minLength={8} placeholder="At least 8 characters" required /></label>
-          {error && <div className="alert">{error}</div>}
-          <button className="primary full" disabled={busy}>{busy ? 'Please wait…' : mode === 'register' ? 'Create workspace account' : 'Sign in to workspace'}</button>
-        </form>
-        <p className="footnote">Built for teams that ship thoughtful work.</p>
-      </section>
+      <div className="auth-topbar">
+        <a className="brand auth-brand" href="#home" aria-label="SprintForge home"><span className="brand-mark">S</span><span>SprintForge</span></a>
+        <div className="auth-top-actions"><span className="secure-note"><span className="secure-dot" /> A calmer way to ship</span><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>{theme === 'light' ? '☾' : '☀'} <span>{theme === 'light' ? 'Dark' : 'Light'} mode</span></button></div>
+      </div>
+      <div className="auth-layout" id="home">
+        <section className="auth-story">
+          <div className="story-kicker"><span className="story-kicker-dot" /> YOUR WORK, IN ITS ELEMENT</div>
+          <h1>Make room for<br /><span>great work.</span></h1>
+          <p className="story-copy">A focused space for the projects that matter. Less noise, more momentum—one thoughtful step at a time.</p>
+          <div className="preview-window" aria-label="SprintForge project dashboard preview">
+            <div className="preview-head"><div className="window-dots"><i /><i /><i /></div><span>SPRINT BOARD</span><span className="preview-live"><i /> LIVE</span></div>
+            <div className="preview-body"><div className="preview-title-row"><div><small>YOUR WORKSPACE</small><strong>Product launch</strong></div><div className="preview-avatar-stack"><b>A</b><b>M</b><b>J</b><span>+2</span></div></div>
+              <div className="preview-progress"><div><span>Weekly momentum</span><strong>72%</strong></div><div className="progress-track"><i /></div></div>
+              <div className="preview-task"><span className="preview-check">✓</span><div><strong>Refine onboarding flow</strong><small>Design · Completed</small></div><span className="preview-tag done-tag">Done</span></div>
+              <div className="preview-task"><span className="preview-check active-check">↗</span><div><strong>Ship account experience</strong><small>Engineering · In progress</small></div><span className="preview-tag active-tag">Moving</span></div>
+              <div className="preview-task"><span className="preview-check" /><div><strong>Review launch checklist</strong><small>Planning · Next up</small></div><span className="preview-tag next-tag">Next</span></div>
+            </div>
+          </div>
+          <div className="story-foot"><span>01 / FOCUS</span><span>02 / FLOW</span><span>03 / FINISH</span></div>
+        </section>
+        <section className="auth-card-wrap">
+          <div className="auth-card">
+            <div className="auth-card-heading"><p className="eyebrow">WELCOME TO SPRINTFORGE</p><h2>{mode === 'register' ? 'Start something great.' : 'Welcome back.'}</h2><p>{mode === 'register' ? 'Create your account and give your next idea a home.' : 'Sign in to pick up where your best work left off.'}</p></div>
+            <div className="tabs" role="tablist" aria-label="Authentication"><button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'tab active' : 'tab'} onClick={() => { setMode('login'); setError(''); }}>Sign in</button><button type="button" role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'tab active' : 'tab'} onClick={() => { setMode('register'); setError(''); }}>Create account</button></div>
+            <form onSubmit={authenticate} className="form-stack">
+              {mode === 'register' && <label>Full name<input name="name" autoComplete="name" placeholder="Your name" minLength={2} required /></label>}
+              <label>Email address<input name="email" type="email" autoComplete="email" placeholder="you@company.com" required /></label>
+              <label>Password<input name="password" type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} minLength={8} placeholder="At least 8 characters" required /></label>
+              {error && <div className="alert" role="alert">{error}</div>}
+              <button className="primary full" disabled={busy}>{busy ? <><span className="spinner" /> Connecting…</> : mode === 'register' ? 'Create your account' : 'Sign in'} <span className="button-arrow">↗</span></button>
+            </form>
+            <div className="auth-divider"><span /> <small>MADE FOR FOCUSED TEAMS</small> <span /></div>
+            <p className="auth-legal">By continuing, you agree to use SprintForge responsibly. Your workspace stays yours.</p>
+          </div>
+          <div className="auth-card-bottom"><span>Thoughtful work, beautifully organized.</span><span className="status-caption"><i /> Secure workspace</span></div>
+        </section>
+      </div>
+      <footer className="auth-footer"><span>© {new Date().getFullYear()} SprintForge</span><span>Built for progress, not busywork.</span></footer>
     </main>
   );
 
@@ -168,7 +200,7 @@ export default function App() {
       </aside>
 
       <main className="main-content">
-        <header className="topbar"><div><span className="crumb">Workspace</span><span className="slash">/</span><strong>{selected?.name || 'Projects'}</strong></div><div className="topbar-right"><span className="status-dot"></span><span>Workspace online</span><div className="avatar mini">{user.name.slice(0, 1).toUpperCase()}</div></div></header>
+        <header className="topbar"><div><span className="crumb">Workspace</span><span className="slash">/</span><strong>{selected?.name || 'Projects'}</strong></div><div className="topbar-right"><span className="status-dot"></span><span>Workspace online</span><button className="theme-toggle dashboard-theme" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>{theme === 'light' ? '☾' : '☀'} <span>{theme === 'light' ? 'Dark' : 'Light'}</span></button><div className="avatar mini">{user.name.slice(0, 1).toUpperCase()}</div></div></header>
         <div className="content-wrap">
           {error && <div className="alert inline-alert">{error}<button onClick={() => setError('')}>Dismiss</button></div>}
           {!selected ? (

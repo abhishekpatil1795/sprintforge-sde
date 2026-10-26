@@ -54,7 +54,7 @@ def list_projects(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 @router.post("/projects", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
 def create_project(payload: ProjectCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    project = Project(name=payload.name.strip(), description=payload.description.strip(), owner_id=current_user.id)
+    project = Project(name=payload.name, description=payload.description, owner_id=current_user.id)
     db.add(project); db.commit(); db.refresh(project)
     return project_out(db, project)
 
@@ -74,7 +74,7 @@ def list_tasks(project_id: int, status_filter: TaskStatus | None = Query(default
 @router.post("/projects/{project_id}/tasks", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
 def create_task(project_id: int, payload: TaskCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     get_owned_project(db, project_id, current_user.id)
-    task = Task(project_id=project_id, title=payload.title.strip(), description=payload.description.strip(), priority=payload.priority.value, status=TaskStatus.TODO.value, due_date=payload.due_date)
+    task = Task(project_id=project_id, title=payload.title, description=payload.description, priority=payload.priority.value, status=TaskStatus.TODO.value, due_date=payload.due_date)
     db.add(task); db.commit(); db.refresh(task)
     return task
 

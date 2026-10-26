@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: sprintforge-api
+    runtime: docker
+    rootDir: server
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+
+  - type: web
+    name: sprintforge
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false

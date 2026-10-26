@@ -54,6 +54,10 @@ class ProjectCreate(BaseModel):
         value = value.strip()
         if len(value) < 2: raise ValueError("Project name must contain at least 2 non-space characters")
         return value
+    @field_validator("description")
+    @classmethod
+    def trim_description(cls, value: str) -> str:
+        return value.strip()
 
 class ProjectOut(BaseModel):
     id: int
@@ -75,6 +79,10 @@ class TaskCreate(BaseModel):
         value = value.strip()
         if len(value) < 2: raise ValueError("Task title must contain at least 2 non-space characters")
         return value
+    @field_validator("description")
+    @classmethod
+    def trim_description(cls, value: str) -> str:
+        return value.strip()
 
 class TaskUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=160)
@@ -89,6 +97,10 @@ class TaskUpdate(BaseModel):
         value = value.strip()
         if len(value) < 2: raise ValueError("Task title must contain at least 2 non-space characters")
         return value
+    @field_validator("description")
+    @classmethod
+    def trim_description(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else value
 
 class TaskOut(BaseModel):
     id: int
